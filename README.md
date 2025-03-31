@@ -8,6 +8,7 @@ A Simple PointPillars PyTorch Implementation for 3D Lidar(KITTI) Detection. [[Zh
 
 ## News
 
+- **2025-02** Making PointPillars a python package out of the code is supported.
 - **2024-04** Exporting PointPillars to ONNX & TensorRT is supported on branch [feature/deployment](https://github.com/zhulf0804/PointPillars/tree/feature/deployment).
 
     ![](./figures/pytorch_trt.png)
@@ -34,12 +35,15 @@ A Simple PointPillars PyTorch Implementation for 3D Lidar(KITTI) Detection. [[Zh
 ![](./figures/pc_pred_000134.png)
 ![](./figures/img_3dbbox_000134.png)
 
-## Installation
+## [Install] 
 
-1. Compile the custom operators:
-```bash
-cd ops
-python setup.py develop
+Install PointPillars as a python package and all its dependencies as follows:
+
+```
+cd PointPillars/
+pip install -r requirements.txt
+python setup.py build_ext --inplace
+pip install .
 ```
 
 2. Install dependencies:
