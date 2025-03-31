@@ -5,3 +5,11 @@ build/
 *_logs*
 tmp/
 results/
+dataset/
+results_compare/
+results_debug/
+results_3769/
+results_ori/
+ws/depth/
+depth_processing.log
+ws/image_2

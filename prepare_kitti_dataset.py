@@ -33,14 +33,20 @@ def judge_difficulty(annotation_dict):
 
 
 def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
+    if not os.path.exists(data_root):
+        raise FileNotFoundError(f"Data root {data_root} does not exist")
+    
+    split = 'training' if label else 'testing'
+    img_dir = os.path.join(data_root, split, 'image_2')
+    if not os.path.exists(img_dir):
+        raise FileNotFoundError(f"Image directory {img_dir} does not exist")
+    
     sep = os.path.sep
     print(f"Processing {data_type} data..")
     ids_file = os.path.join(CUR, 'dataset', 'ImageSets', f'{data_type}.txt')
     with open(ids_file, 'r') as f:
         ids = [id.strip() for id in f.readlines()]
     
-    split = 'training' if label else 'testing'
-
     kitti_infos_dict = {}
     if db:
         kitti_dbinfos_train = {}
@@ -54,6 +60,8 @@ def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
         cur_info_dict['velodyne_path'] = sep.join(lidar_path.split(sep)[-3:])
 
         img = cv2.imread(img_path)
+        if img is None:
+            raise FileNotFoundError(f"Failed to load image: {img_path}")
         image_shape = img.shape[:2]
         cur_info_dict['image'] = {
             'image_shape': image_shape,

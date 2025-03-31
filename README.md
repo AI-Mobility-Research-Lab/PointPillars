@@ -1,10 +1,10 @@
 # [PointPillars: Fast Encoders for Object Detection from Point Clouds](https://arxiv.org/abs/1812.05784) 
 
-A Simple PointPillars PyTorch Implenmentation for 3D Lidar(KITTI) Detection. [[Zhihu](https://zhuanlan.zhihu.com/p/521277176)]
+A Simple PointPillars PyTorch Implementation for 3D Lidar(KITTI) Detection. [[Zhihu](https://zhuanlan.zhihu.com/p/521277176)]
 
 - It can be run without installing [Spconv](https://github.com/traveller59/spconv), [mmdet](https://github.com/open-mmlab/mmdetection) or [mmdet3d](https://github.com/open-mmlab/mmdetection3d). 
 - Only one detection network (PointPillars) was implemented in this repo, so the code may be more easy to read. 
-- Sincere thanks for the great open-source architectures [mmcv](https://github.com/open-mmlab/mmcv), [mmdet](https://github.com/open-mmlab/mmdetection) and [mmdet3d](https://github.com/open-mmlab/mmdetection3d), which helps me to learn 3D detetion and implement this repo.
+- Sincere thanks for the great open-source architectures [mmcv](https://github.com/open-mmlab/mmcv), [mmdet](https://github.com/open-mmlab/mmdetection) and [mmdet3d](https://github.com/open-mmlab/mmdetection3d), which helps me to learn 3D detection and implement this repo.
 
 ## News
 
@@ -12,7 +12,9 @@ A Simple PointPillars PyTorch Implenmentation for 3D Lidar(KITTI) Detection. [[Z
 
     ![](./figures/pytorch_trt.png)
 
-## mAP on KITTI validation set (Easy, Moderate, Hard)
+## Performance
+
+### mAP on KITTI validation set (Easy, Moderate, Hard)
 
 | Repo | Metric | Overall | Pedestrian | Cyclist | Car |
 | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -32,18 +34,98 @@ A Simple PointPillars PyTorch Implenmentation for 3D Lidar(KITTI) Detection. [[Z
 ![](./figures/pc_pred_000134.png)
 ![](./figures/img_3dbbox_000134.png)
 
-## [Compile] 
+## Installation
 
-```
+1. Compile the custom operators:
+```bash
 cd ops
 python setup.py develop
 ```
 
-## [Datasets]
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-1. Download
+## Pipeline Usage
 
-    Download [point cloud](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_velodyne.zip)(29GB), [images](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_image_2.zip)(12 GB), [calibration files](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_calib.zip)(16 MB)和[labels](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_label_2.zip)(5 MB)。Format the datasets as follows:
+The project includes a unified pipeline script (`pipeline.py`) that provides a convenient interface for all operations. Here's how to use it:
+
+### Basic Usage
+```bash
+python pipeline.py --data_root your_path_to_kitti --action <action_name>
+```
+
+Available actions:
+- `prepare`: Prepare the KITTI dataset
+- `reduce_beams`: Reduce the number of LiDAR beams
+- `visualize_beams`: Visualize the reduced beams
+- `train`: Train the model
+- `evaluate`: Evaluate the model
+- `test`: Test the model on a single point cloud
+- `test_reduced`: Test the model using reduced LiDAR beams
+- `full_pipeline`: Run the complete pipeline (prepare → reduce beams → visualize → train → evaluate)
+
+### Examples
+
+1. Prepare the dataset:
+```bash
+python pipeline.py --data_root your_path_to_kitti --action prepare
+```
+
+2. Reduce and visualize LiDAR beams:
+```bash
+python pipeline.py --data_root your_path_to_kitti --action reduce_beams
+python pipeline.py --data_root your_path_to_kitti --action visualize_beams
+```
+
+3. Train the model:
+```bash
+python pipeline.py --data_root your_path_to_kitti --action train
+```
+
+4. Evaluate the model:
+```bash
+python pipeline.py --data_root your_path_to_kitti --action evaluate --ckpt pretrained/epoch_160.pth
+```
+
+5. Test on a single point cloud (original beams):
+```bash
+python pipeline.py --data_root your_path_to_kitti --action test \
+                   --pc_path dataset/demo_data/val/000134.bin \
+                   --calib_path dataset/demo_data/val/000134.txt \
+                   --img_path dataset/demo_data/val/000134.png \
+                   --gt_path dataset/demo_data/val/000134_gt.txt
+```
+
+6. Test on a single point cloud (reduced beams):
+```bash
+python pipeline.py --data_root your_path_to_kitti --action test_reduced \
+                   --pc_path dataset/demo_data/val/000134.bin \
+                   --calib_path dataset/demo_data/val/000134.txt \
+                   --img_path dataset/demo_data/val/000134.png \
+                   --gt_path dataset/demo_data/val/000134_gt.txt
+```
+
+7. Run the complete pipeline:
+```bash
+python pipeline.py --data_root your_path_to_kitti --action full_pipeline
+```
+
+### Notes
+- The `test_reduced` action automatically uses the reduced LiDAR beams from the `velodyne_reduced` directory
+- The `full_pipeline` action runs all steps in sequence: dataset preparation, beam reduction, visualization, training, and evaluation
+- Make sure to run `reduce_beams` before using `test_reduced` or `full_pipeline`
+
+## Dataset Preparation
+
+1. Download KITTI Dataset:
+    - [Point cloud data](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_velodyne.zip) (29GB)
+    - [Images](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_image_2.zip) (12GB)
+    - [Calibration files](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_calib.zip) (16MB)
+    - [Labels](https://s3.eu-central-1.amazonaws.com/avg-kitti/data_object_label_2.zip) (5MB)
+
+    Organize the dataset as follows:
     ```
     kitti
         |- training
@@ -57,28 +139,19 @@ python setup.py develop
             |- velodyne (#7518 .bin)
     ```
 
-2. Pre-process KITTI datasets First
-
-    ```
-    cd PointPillars/
-    python pre_process_kitti.py --data_root your_path_to_kitti
+2. Pre-process the KITTI dataset:
+    ```bash
+    python prepare_kitti_dataset.py --data_root your_path_to_kitti
     ```
 
-    Now, we have datasets as follows:
+    This will generate additional files:
     ```
     kitti
         |- training
-            |- calib (#7481 .txt)
-            |- image_2 (#7481 .png)
-            |- label_2 (#7481 .txt)
-            |- velodyne (#7481 .bin)
             |- velodyne_reduced (#7481 .bin)
         |- testing
-            |- calib (#7518 .txt)
-            |- image_2 (#7518 .png)
-            |- velodyne (#7518 .bin)
             |- velodyne_reduced (#7518 .bin)
-        |- kitti_gt_database (# 19700 .bin)
+        |- kitti_gt_database (#19700 .bin)
         |- kitti_infos_train.pkl
         |- kitti_infos_val.pkl
         |- kitti_infos_trainval.pkl
@@ -86,56 +159,54 @@ python setup.py develop
         |- kitti_dbinfos_train.pkl
     ```
 
-## [Training]
+## Usage
 
-```
-cd PointPillars/
+### Training
+```bash
 python train.py --data_root your_path_to_kitti
 ```
 
-## [Evaluation]
-
-```
-cd PointPillars/
+### Evaluation
+```bash
 python evaluate.py --ckpt pretrained/epoch_160.pth --data_root your_path_to_kitti 
 ```
 
-## [Test]
+### Testing and Visualization
 
-```
-cd PointPillars/
-
-# 1. infer and visualize point cloud detection
+1. Point cloud detection visualization:
+```bash
 python test.py --ckpt pretrained/epoch_160.pth --pc_path your_pc_path 
-
-# 2. infer and visualize point cloud detection and gound truth.
-python test.py --ckpt pretrained/epoch_160.pth --pc_path your_pc_path --calib_path your_calib_path  --gt_path your_gt_path
-
-# 3. infer and visualize point cloud & image detection
-python test.py --ckpt pretrained/epoch_160.pth --pc_path your_pc_path --calib_path your_calib_path --img_path your_img_path
-
-
-e.g. 
-a. [infer on val set 000134]
-
-python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/val/000134.bin
-
-or
-
-python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/val/000134.bin \ 
-               --calib_path dataset/demo_data/val/000134.txt --img_path dataset/demo_data/val/000134.png \ 
-               --gt_path dataset/demo_data/val/000134_gt.txt
-
-b. [infer on test set 000002]
-
-python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/test/000002.bin
-
-or 
-
-python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/test/000002.bin \ 
-               --calib_path dataset/demo_data/test/000002.txt --img_path dataset/demo_data/test/000002.png
 ```
 
-## Acknowledements
+2. Point cloud detection with ground truth:
+```bash
+python test.py --ckpt pretrained/epoch_160.pth --pc_path your_pc_path --calib_path your_calib_path --gt_path your_gt_path
+```
+
+3. Point cloud and image detection visualization:
+```bash
+python test.py --ckpt pretrained/epoch_160.pth --pc_path your_pc_path --calib_path your_calib_path --img_path your_img_path
+```
+
+### Example Usage
+
+1. Inference on validation set sample (000134):
+```bash
+python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/val/000134.bin
+```
+
+2. Inference with ground truth and image visualization:
+```bash
+python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/val/000134.bin \
+               --calib_path dataset/demo_data/val/000134.txt --img_path dataset/demo_data/val/000134.png \
+               --gt_path dataset/demo_data/val/000134_gt.txt
+```
+
+3. Inference on test set sample (000002):
+```bash
+python test.py --ckpt pretrained/epoch_160.pth --pc_path dataset/demo_data/test/000002.bin
+```
+
+## Acknowledgments
 
 Thanks for the open source code [mmcv](https://github.com/open-mmlab/mmcv), [mmdet](https://github.com/open-mmlab/mmdetection) and [mmdet3d](https://github.com/open-mmlab/mmdetection3d).
